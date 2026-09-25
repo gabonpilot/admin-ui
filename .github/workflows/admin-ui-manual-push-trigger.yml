@@ -11,9 +11,8 @@ on:
   push:
     branches:
       - '!release-branch'
-      - *-pilot-*
-      - mec-*
-      - gabon-*
+      - 'mec-*'
+      - 'gabon-*'
 
 jobs:
   build-admin-ui:
