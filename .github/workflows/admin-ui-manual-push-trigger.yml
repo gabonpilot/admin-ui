@@ -1,4 +1,4 @@
-name: admin-ui push trigger build upon a push
+name: admin-ui manual build upon a push
 
 on:
   workflow_dispatch:
