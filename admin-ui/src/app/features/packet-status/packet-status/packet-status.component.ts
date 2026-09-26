@@ -25,8 +25,8 @@ export class PacketStatusComponent implements OnInit {
   showTimeline = false;
   messages: any;
   statusCheck: string;
-  serverMessage:any;
-  languageCode:any;
+  serverMessage: any;
+  languageCode: any;
 
   id = '';
   error = false;
@@ -42,12 +42,11 @@ export class PacketStatusComponent implements OnInit {
     this.languageCode = this.headerService.getUserPreferredLanguage();
     translate.use(this.headerService.getUserPreferredLanguage());
     this.translate
-    .getTranslation(this.headerService.getUserPreferredLanguage())
-    .subscribe(response => {
-      console.log(response);
-      this.messages = response['packet-status'];
-      this.serverMessage = response['serverError'];
-    });
+      .getTranslation(this.headerService.getUserPreferredLanguage())
+      .subscribe(response => {
+        this.messages = response['packet-status'];
+        this.serverMessage = response['serverError'];
+      });
   }
 
   ngOnInit() {
@@ -57,33 +56,52 @@ export class PacketStatusComponent implements OnInit {
   search() {
     this.data = null;
     this.errorMessage = '';
+
     if (this.id.length == 0) {
       this.error = true;
-    } else {
-      this.error = false;
-      this.dataStorageService.getPacketStatus(this.id, this.headerService.getUserPreferredLanguage()).subscribe(response => {
+      return;
+    }
+
+    this.error = false;
+
+    this.dataStorageService
+      .getPacketStatus(this.id, this.headerService.getUserPreferredLanguage())
+      .subscribe(response => {
         if (response['errors']) {
           this.error = true;
           this.statusCheck = '';
           this.errorMessage = this.serverMessage[response['errors'][0].errorCode];
-       } else{          
-          this.data = response['response']['packetStatusUpdateList'];
-          for (let i = 0 ; i < this.data.length; i++) {
-            if (this.data[i].statusCode.includes('FAILED')) {
-              this.statusCheck = this.messages.statuscheckFailed;
-              break;
-            } else {
-              this.statusCheck = this.messages.statuscheckCompleted;
-            }
-            this.error = false;
-            this.showDetails = true;
-          }
+          return;
         }
+
+        this.data = response['response']['packetStatusUpdateList'];
+
+        if (this.data && this.data.length > 0) {
+
+          const workflowRecords = this.data.filter(item =>
+            item.transactionTypeCode === 'INTERNAL_WORKFLOW_ACTION'
+          );
+
+          const workflowAction = workflowRecords.length > 0
+            ? workflowRecords.reduce((a, b) =>
+              new Date(a.createdDateTimes) > new Date(b.createdDateTimes) ? a : b): null;
+
+          if (workflowAction && workflowAction.statusCode === 'PROCESSED') {
+            this.statusCheck = this.messages.statuscheckCompleted;
+          } else {
+            this.statusCheck = this.messages.statuscheckFailed;
+          }
+
+        } else {
+          this.statusCheck = this.messages.statuscheckFailed;
+        }
+
+        this.error = false;
+        this.showDetails = true;
       });
-    }
   }
 
-viewMore() {
+  viewMore() {
     this.showTimeline = !this.showTimeline;
   }
 }
